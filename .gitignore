@@ -2,3 +2,6 @@ config.js
 node_modules
 wpt.config.js
 .gitconfig
+*_rsa
+*_rsa.pub
+archive.zip
