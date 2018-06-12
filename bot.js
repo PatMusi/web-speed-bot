@@ -10,6 +10,14 @@ var uu = require("url-unshort")({
   nesting: 4
 });
 
+var scoreToLetter = function(score) {
+  if (score >= 90) return "A";
+  else if (score >= 80) return "B";
+  else if (score >= 70) return "C";
+  else if (score >= 60) return "D";
+  else return "F";
+};
+
 T.get("account/verify_credentials", { skip_status: true })
   .catch(function(err) {
     console.log("caught error", err.stack);
@@ -58,8 +66,7 @@ T.get("account/verify_credentials", { skip_status: true })
             "\n"
         );
 
-        uu
-          .expand(urlToTest)
+        uu.expand(urlToTest)
           .then(function(url) {
             if (url) {
               console.log("Expanded url is: " + url + "\n");
@@ -67,7 +74,13 @@ T.get("account/verify_credentials", { skip_status: true })
             This is the actual sending of the detected URL to WebPageTest for performance testing.  Right now with simple default settings.
             It also tweets the result URL back to the original tweeter
           */
-              wpt.runTest(url, function(err, data) {
+              wpt.runTest(url, { pollResults: 30, timeout: 600 }, function(
+                err,
+                data
+              ) {
+                !err ? (data = data.data) : (data = data);
+                console.log("Data: ", data);
+                console.log("\n\n");
                 var thisStatus;
                 if (err) {
                   console.log(err);
@@ -77,12 +90,29 @@ T.get("account/verify_credentials", { skip_status: true })
                     ", it looks like something went wrong with testing this URL.  WebPageTest threw me an error, sorry about that.";
                 } else {
                   thisStatus =
-                    "No problem @" +
+                    "Hey @" +
                     screenName +
-                    ".  I submitted the test for " +
-                    url +
-                    " to www.webpagetest.org, check the result at " +
-                    data.data.userUrl;
+                    ",\n\nLink to Result: " +
+                    data.summary +
+                    "\n\n" +
+                    "Time to First Byte: " +
+                    data.average.firstView.TTFB +
+                    "ms\n\n" +
+                    "Keep Alive Score: " +
+                    scoreToLetter(data.average.firstView["score_keep-alive"]) +
+                    "\n\n" +
+                    "Compress Transfer Score: " +
+                    scoreToLetter(data.average.firstView.score_gzip) +
+                    "\n\n" +
+                    "Compress Images Score: " +
+                    scoreToLetter(data.average.firstView.score_compress) +
+                    "\n\n" +
+                    "Cache Static Content Score: " +
+                    scoreToLetter(data.average.firstView.score_cache) +
+                    "\n\n" +
+                    "Effective CDN Score: " +
+                    scoreToLetter(data.average.firstView.score_cdn) +
+                    "\n\n";
                 }
                 T.post(
                   "statuses/update",
