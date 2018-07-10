@@ -42,8 +42,17 @@ T.get("account/verify_credentials", { skip_status: true })
     stream.on("tweet", function(message) {
       var screenName = message.user.screen_name;
 
-      // Return when the account has replied to itself and prevent infinite loops
-      if (screenName === botName) {
+      /*
+        This is the return case, in which we want to prevent this from going to WPT.
+        1. When the tweeter is the bot itself, we need to prevent ifinite loops
+        2. When the tweet is a retweet
+        3. When the tweet is a quote
+      */
+      if (
+        screenName === botName ||
+        message.retweeted_status ||
+        message.quoted_status
+      ) {
         return;
       }
 
